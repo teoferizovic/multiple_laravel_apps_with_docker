@@ -1,0 +1,87 @@
+version: '3'
+
+networks:
+  laravel:
+  app-shared:
+    driver: bridge  
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx_two
+    ports:
+      - "8082:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - mysql
+    networks:
+      - laravel
+      - app-shared
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql_two
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "43062:3306"
+    environment:
+      MYSQL_DATABASE: homestead
+      MYSQL_USER: homestead
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: secret
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - laravel
+
+  php:
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    container_name: php_two
+    volumes:
+      - ./src:/var/www/html
+    ports:
+      - "9002:9000"
+    networks:
+      - laravel
+      - app-shared
+
+  composer:
+    image: composer:latest
+    container_name: composer_two
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - php
+    networks:
+      - laravel 
+
+  npm:
+    image: node:13.7
+    container_name: npm_two
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ['npm']
+
+  artisan:
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    container_name: artisan_two
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - mysql
+    working_dir: /var/www/html
+    entrypoint: ['/var/www/html/artisan']
+    networks:
+      - laravel    
+
+     
